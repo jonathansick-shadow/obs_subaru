@@ -13,6 +13,12 @@ config.calibrate.measurePsf.starSelector.name='objectSize'
 config.calibrate.measurePsf.starSelector['objectSize'].widthMin=0.9
 config.calibrate.measurePsf.starSelector['objectSize'].fluxMin=4000
 
+# Set to same defaults used in HSC
+config.calibrate.astrometry.matcher.sourceFluxType='Psf'
+config.calibrate.astrometry.matcher.allowedNonperpDeg=0.2
+config.calibrate.astrometry.matcher.maxRotationDeg=1.145916
+config.calibrate.astrometry.wcsFitter.numRejIter=3
+
 config.calibrate.astrometry.wcsFitter.order = 3
 config.calibrate.astrometry.matcher.maxMatchDistArcSec = 2.0
 config.calibrate.astrometry.matcher.maxOffsetPix = 750

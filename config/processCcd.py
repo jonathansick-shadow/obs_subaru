@@ -41,9 +41,11 @@ config.calibrate.astrometry.refObjLoader.filterMap = {
 
 config.measurement.plugins.names |= ["base_Jacobian", "base_FPPosition"]
 config.measurement.plugins['base_Jacobian'].pixelScale = 0.168
+
+# Set to same defaults used in HSC
+config.calibrate.initialMeasurement.plugins['base_ClassificationExtendedness'].fluxRatio = 0.95
+config.calibrate.measurement.plugins['base_ClassificationExtendedness'].fluxRatio = 0.985
 config.measurement.algorithms['base_ClassificationExtendedness'].fluxRatio = 0.95
-# LAM the following had to be set to affect the fluxRatio used in photocal in meas_astrom
-config.calibrate.measurement.plugins['base_ClassificationExtendedness'].fluxRatio = 0.95
 
 config.calibrate.photocal.applyColorTerms = True
 
