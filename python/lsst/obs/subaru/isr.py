@@ -231,6 +231,13 @@ class SubaruIsrTask(IsrTask):
         ccdExposure = self.convertIntToFloat(ccdExposure)
         ccd = ccdExposure.getDetector()
 
+        doWriteDebug = False
+        outDir = "/tigress/HSC/users/lauren/testing/LSST/"+str(ccd.getId())
+        try:
+            os.mkdir(outDir)
+        except:
+            print outDir+" already exists...in isr.py..."
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr0.fits")
         # Read in defects to check for any dead amplifiers (entire amp is within defect region)
         defectsRaw = sensorRef.get("defects", immediate=True)
         # Need to rotate defects bbox if we are dealing with a rotated ccd as they are defined assuming
@@ -302,6 +309,7 @@ class SubaruIsrTask(IsrTask):
                 self.updateVariance(ampExposure, amp)
 
         ccdExposure = self.assembleCcd.assembleCcd(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr1.fits")
         ccd = ccdExposure.getDetector()
 
         doRotateCalib = False   # Rotate calib images for bias/dark/flat correction?
@@ -323,10 +331,15 @@ class SubaruIsrTask(IsrTask):
             else:
                 with self.rotated(ccdExposure) as exp:
                     self.biasCorrection(exp, biasExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr2.fits")
+
         if self.config.doLinearize:
             self.linearize(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr3.fits")
+
         if self.config.doCrosstalk:
             self.crosstalk.run(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr4.fits")
 
         if self.config.doBrighterFatter:
             brighterFatterKernel = sensorRef.get('bfKernel')
@@ -335,6 +348,7 @@ class SubaruIsrTask(IsrTask):
                                           self.config.brighterFatterThreshold,
                                           self.config.brighterFatterApplyGain,
                                           )
+
         if self.config.doDark:
             darkExposure = self.getIsrExposure(sensorRef, "dark")
             if not doRotateCalib:
@@ -342,6 +356,8 @@ class SubaruIsrTask(IsrTask):
             else:
                 with self.rotated(ccdExposure) as exp:
                     self.darkCorrection(exp, darkExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr5.fits")
+
         if self.config.doFlat:
             flatExposure = self.getIsrExposure(sensorRef, "flat")
             if not doRotateCalib:
@@ -349,20 +365,40 @@ class SubaruIsrTask(IsrTask):
             else:
                 with self.rotated(ccdExposure) as exp:
                     self.flatCorrection(exp, flatExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr6.fits")
+
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr7.fits")
 
         if self.config.doApplyGains:
             self.applyGains(ccdExposure, self.config.normalizeGains)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr8.fits")
+        time1 =  os.times()[-1]
         if self.config.doWidenSaturationTrails:
             self.widenSaturationTrails(ccdExposure.getMaskedImage().getMask())
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr9.fits")
+
         if self.config.doSaturation:
-            self.saturationInterpolation(ccdExposure)
+            if not doRotateCalib:
+                self.saturationInterpolation(ccdExposure)
+            else:
+                with self.rotated(ccdExposure) as exp:
+                    self.saturationInterpolation(exp)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr10.fits")
 
         if self.config.doFringe:
             self.fringe.runDataRef(ccdExposure, sensorRef)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr11.fits")
+
         if self.config.doSetBadRegions:
             self.setBadRegions(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr12.fits")
 
         self.maskAndInterpNan(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr13.fits")
+
+        time2 =  os.times()[-1]
+        print 'elapsed time = ', time2-time1
+        # raw_input()
 
         if self.config.qa.doWriteFlattened:
             sensorRef.put(ccdExposure, "flattenedImage")
@@ -370,14 +406,17 @@ class SubaruIsrTask(IsrTask):
             self.writeThumbnail(sensorRef, "flattenedThumb", ccdExposure)
 
         self.measureBackground(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr14.fits")
 
         if self.config.doGuider:
             self.guider(ccdExposure)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr15.fits")
 
         self.roughZeroPoint(ccdExposure)
-
+        print 'ccdExposure.getCalib().getFluxMag0() = ', ccdExposure.getCalib().getFluxMag0()
         if self.config.doWriteVignettePolygon:
             self.setValidPolygonIntersect(ccdExposure, self.vignettePolygon)
+        if doWriteDebug: ccdExposure.writeFits(outDir+"/isr16.fits")
 
         if self.config.doWrite:
             sensorRef.put(ccdExposure, "postISRCCD")
@@ -391,8 +430,9 @@ class SubaruIsrTask(IsrTask):
         return Struct(exposure=ccdExposure)
 
     @contextmanager
-    def rotated(self, exp):
-        nQuarter = exp.getDetector().getOrientation().getNQuarter()
+    def rotated(self, exp, nQuarter=None):
+        if nQuarter is None:
+            nQuarter = exp.getDetector().getOrientation().getNQuarter()
         exp.setMaskedImage(afwMath.rotateImageBy90(exp.getMaskedImage(), nQuarter))
         try:
             yield exp
