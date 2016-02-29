@@ -316,9 +316,6 @@ class SubaruIsrTask(IsrTask):
         if nQuarter != 0:
             doRotateCalib = True
 
-        if self.config.doDefect:
-            self.maskAndInterpDefect(ccdExposure, defects)
-
         if self.config.qa.doWriteOss:
             sensorRef.put(ccdExposure, "ossImage")
         if self.config.qa.doThumbnailOss:
@@ -367,6 +364,8 @@ class SubaruIsrTask(IsrTask):
                     self.flatCorrection(exp, flatExposure)
         if doWriteDebug: ccdExposure.writeFits(outDir+"/isr6.fits")
 
+        if self.config.doDefect:
+            self.maskAndInterpDefect(ccdExposure, defects)
         if doWriteDebug: ccdExposure.writeFits(outDir+"/isr7.fits")
 
         if self.config.doApplyGains:
