@@ -32,6 +32,7 @@ coeffs, coeffsErr = crosstalk.estimateCoeffs(butler, range(131634, 131642), rang
                                              plot=True, title="CCD0..9", fig=1)
 crosstalk.fixCcd(butler, 131634, 0, coeffs)
 """
+import sys
 import math
 import numpy as np
 import time
