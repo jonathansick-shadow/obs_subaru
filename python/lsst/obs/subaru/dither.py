@@ -1,4 +1,3 @@
-import numpy as np
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom as afwCG
 
