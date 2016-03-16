@@ -101,11 +101,6 @@ class SubaruIsrConfig(IsrTask.ConfigClass):
         doc = "Correct for crosstalk",
         default = True,
     )
-    doLinearize = pexConfig.Field(
-        dtype = bool,
-        doc = "Correct for nonlinearity of the detector's response (ignored if coefficients are 0.0)",
-        default = True,
-    )
     doApplyGains = pexConfig.Field(
         dtype = bool,
         doc = """Correct the amplifiers for their gains
@@ -318,7 +313,7 @@ class SubaruIsrTask(IsrTask):
                 with self.rotated(ccdExposure) as exp:
                     self.biasCorrection(exp, biasExposure)
         if self.config.doLinearize:
-            self.linearize(ccdExposure)
+            self.linearize.run(ccdExposure)
         if self.config.doCrosstalk:
             self.crosstalk.run(ccdExposure)
 
@@ -575,59 +570,6 @@ class SubaruIsrTask(IsrTask):
         raise NotImplementedError(
             "Guider shadow trimming is enabled but no generic implementation is present"
             )
-
-    def linearize(self, exposure):
-        """Correct for non-linearity
-
-        @param exposure Exposure to process
-        """
-        assert exposure, "No exposure provided"
-
-        ccd = exposure.getDetector()
-
-        if ccd.getSerial() in map(str, range(104, 112)):
-            self.log.warn("Skipping linearity correction for focus CCD %s: no coefficients available" %
-                          (ccd.getSerial(),))
-            return
-
-        linearized = False              # did we apply linearity corrections?
-        for amp in ccd:
-            linearityCoefficient = amp.getLinearityCoeffs()[0]
-            linearityThreshold = amp.getLinearityCoeffs()[1]
-            linearityMaxCorrectable = amp.getLinearityCoeffs()[2]
-            linearityType = amp.getLinearityType()
-
-            ampImage = afwImage.MaskedImageF(exposure.getMaskedImage(), amp.getBBox(),
-                                                 afwImage.PARENT)
-
-            imageTypeMax = 65535        # should be a method on the image
-            setSuspectPixels = linearityMaxCorrectable < imageTypeMax # there might be some
-
-            if not setSuspectPixels and linearityCoefficient == 0.0:
-                continue                # nothing to do
-
-            linearized = True
-            #
-            # We may have a max correctable level even if we make no attempt to correct
-            #
-            if setSuspectPixels:
-                afwDetection.FootprintSet(ampImage,
-                                          afwDetection.Threshold(linearityMaxCorrectable), "SUSPECT")
-
-            if linearityType == 'PROPORTIONAL':
-                if linearityThreshold != 0.0:
-                    raise RuntimeError(
-                        ("The threshold for PROPORTIONAL linearity corrections must be 0; saw %g" +
-                         " for ccd %s amp %s") % (linearityThreshold, ccd.getId(), amp.getName()))
-
-                ampArr = ampImage.getImage().getArray()
-                ampArr *= 1.0 + linearityCoefficient*ampArr
-            else:
-                raise NotImplementedError("Unimplemented linearity type: %d", linearityType)
-
-        if linearized:
-            self.log.log(self.log.INFO, "Applying linearity corrections to Ccd %s" % (ccd.getId()))
-
 
     def flatCorrection(self, exposure, flatExposure):
         """Apply flat correction in-place
