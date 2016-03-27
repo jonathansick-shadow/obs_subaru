@@ -1,8 +1,8 @@
-# 
+#
 # LSST Data Management System
 #
 # Copyright 2008-2016 AURA/LSST.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -10,14 +10,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 import os
@@ -44,32 +44,34 @@ import lsst.afw.display.ds9 as ds9
 from lsst.obs.hsc.vignette import VignetteConfig
 from lsst.afw.geom.polygon import Polygon
 
+
 class QaFlatnessConfig(pexConfig.Config):
     meshX = pexConfig.Field(
         dtype = int,
         doc = 'Mesh size in X (pix) to calculate count statistics',
         default = 256,
-        )
+    )
     meshY = pexConfig.Field(
         dtype = int,
         doc = 'Mesh size in Y (pix) to calculate count statistics',
         default = 256,
-        )
+    )
     doClip = pexConfig.Field(
         dtype = bool,
         doc = 'Do we clip outliers in calculate count statistics?',
         default = True,
-        )
+    )
     clipSigma = pexConfig.Field(
         dtype = float,
         doc = 'How many sigma is used to clip outliers in calculate count statistics?',
         default = 3.0,
-        )
+    )
     nIter = pexConfig.Field(
         dtype = int,
         doc = 'How many times do we iterate clipping outliers in calculate count statistics?',
         default = 3,
-        )
+    )
+
 
 class QaConfig(pexConfig.Config):
     flatness = pexConfig.ConfigField(dtype=QaFlatnessConfig, doc="Qa.flatness")
@@ -78,10 +80,13 @@ class QaConfig(pexConfig.Config):
     doWriteFlattened = pexConfig.Field(doc="Write flattened image?", dtype=bool, default=False)
     doThumbnailFlattened = pexConfig.Field(doc="Write flattened thumbnail?", dtype=bool, default=True)
 
+
 class NullCrosstalkTask(Task):
     ConfigClass = pexConfig.Config
+
     def run(self, exposure):
         self.log.info("Not performing any crosstalk correction")
+
 
 class SubaruIsrConfig(IsrTask.ConfigClass):
     qa = pexConfig.ConfigField(doc="QA-related config options", dtype=QaConfig)
@@ -134,7 +139,7 @@ after applying the nominal gain
         dtype = bool,
         doc = "Should we set the level of all BAD patches of the chip to the chip's average value?",
         default = True,
-        )
+    )
     badStatistic = pexConfig.ChoiceField(
         dtype = str,
         doc = "How to estimate the average value for BAD regions.",
@@ -142,8 +147,8 @@ after applying the nominal gain
         allowed = {
             "MEANCLIP": "Correct using the (clipped) mean of good data",
             "MEDIAN": "Correct using the median of the good data",
-            },
-        )
+        },
+    )
     doTweakFlat = pexConfig.Field(dtype=bool, doc="Tweak flats to match observed amplifier ratios?",
                                   default=False)
     overscanMaxDev = pexConfig.Field(dtype=float, doc="Maximum deviation from the median for overscan",
@@ -154,27 +159,27 @@ after applying the nominal gain
         dtype = int,
         doc = "Number of points to define the Vignette polygon",
         default = 100,
-        )
+    )
     doWriteVignettePolygon = pexConfig.Field(
         dtype = bool,
         doc = "Persist Polygon used to define vignetted region?",
         default = True,
-        )
+    )
     fluxMag0T1 = pexConfig.DictField(
         keytype = str,
         itemtype = float,
         doc = "The approximate flux of a zero-magnitude object in a one-second exposure, per filter",
         # These are the HSC sensitivities from:
         # http://www.subarutelescope.org/Observing/Instruments/HSC/sensitivity.html
-        default = dict((f, pow(10.0, 0.4*m)) for f,m in (("g", 29.0),
-                                                         ("r", 29.0),
-                                                         ("i", 28.6),
-                                                         ("z", 27.7),
-                                                         ("y", 27.4),
-                                                         ("N515", 25.8),
-                                                         ("N816", 25.5),
-                                                         ("N921", 25.7),
-                                                         ))
+        default = dict((f, pow(10.0, 0.4*m)) for f, m in (("g", 29.0),
+                                                          ("r", 29.0),
+                                                          ("i", 28.6),
+                                                          ("z", 27.7),
+                                                          ("y", 27.4),
+                                                          ("N515", 25.8),
+                                                          ("N816", 25.5),
+                                                          ("N921", 25.7),
+                                                          ))
     )
     defaultFluxMag0T1 = pexConfig.Field(dtype=float, default=pow(10.0, 0.4*28.0),
                                         doc="Default value for fluxMag0T1 (for an unrecognised filter)")
@@ -189,6 +194,7 @@ after applying the nominal gain
         super(SubaruIsrConfig, self).validate()
         if self.doFlat and self.doApplyGains:
             raise ValueError("You may not specify both self.doFlat and self.doApplyGains")
+
 
 class SubaruIsrTask(IsrTask):
 
@@ -208,7 +214,7 @@ class SubaruIsrTask(IsrTask):
         self.log.log(self.log.INFO, "Performing ISR on sensor %s" % (sensorRef.dataId))
         ccdExposure = sensorRef.get('raw')
 
-        if self.config.removePcCards: # Remove any PC00N00M cards in the header
+        if self.config.removePcCards:  # Remove any PC00N00M cards in the header
             raw_md = sensorRef.get("raw_md")
             nPc = 0
             for i in (1, 2,):
@@ -288,7 +294,7 @@ class SubaruIsrTask(IsrTask):
                                            order=self.config.overscanOrder,
                                            collapseRej=self.config.overscanRej,
                                            statControl=statControl,
-                                   )
+                                           )
 
             if self.config.doVariance:
                 # Ideally, this should be done after bias subtraction,
@@ -445,8 +451,10 @@ class SubaruIsrTask(IsrTask):
                     x0 -= xmin + extraGrow
                     x1 -= xmin - extraGrow
 
-                    if x0 < 0: x0 = 0
-                    if x1 >= width - 1: x1 = width - 1
+                    if x0 < 0:
+                        x0 = 0
+                    if x1 >= width - 1:
+                        x1 = width - 1
 
                     for x in range(x0, x1 + 1):
                         mask.set(x, y, mask.get(x, y) | saturatedBit)
@@ -518,7 +526,6 @@ class SubaruIsrTask(IsrTask):
         metadata.set("OSLEVEL%d" % ampNum, stats.getValue(levelStat))
         metadata.set("OSSIGMA%d" % ampNum, stats.getValue(sigmaStat))
 
-
     def measureBackground(self, exposure):
         statsControl = afwMath.StatisticsControl(self.config.qa.flatness.clipSigma,
                                                  self.config.qa.flatness.nIter)
@@ -539,7 +546,7 @@ class SubaruIsrTask(IsrTask):
         meshYHalf = int(self.config.qa.flatness.meshY/2.)
         nX = int((exposure.getWidth() + meshXHalf) / self.config.qa.flatness.meshX)
         nY = int((exposure.getHeight() + meshYHalf) / self.config.qa.flatness.meshY)
-        skyLevels = numpy.zeros((nX,nY))
+        skyLevels = numpy.zeros((nX, nY))
 
         for j in range(nY):
             yc = meshYHalf + j * self.config.qa.flatness.meshY
@@ -554,11 +561,11 @@ class SubaruIsrTask(IsrTask):
                 bbox = afwGeom.Box2I(afwGeom.Point2I(xLLC, yLLC), afwGeom.Point2I(xURC, yURC))
                 miMesh = maskedImage.Factory(exposure.getMaskedImage(), bbox, afwImage.LOCAL)
 
-                skyLevels[i,j] = afwMath.makeStatistics(miMesh, stat, statsControl).getValue()
+                skyLevels[i, j] = afwMath.makeStatistics(miMesh, stat, statsControl).getValue()
 
         good = numpy.where(numpy.isfinite(skyLevels))
         skyMedian = numpy.median(skyLevels[good])
-        flatness =  (skyLevels[good] - skyMedian) / skyMedian
+        flatness = (skyLevels[good] - skyMedian) / skyMedian
         flatness_rms = numpy.std(flatness)
         flatness_pp = flatness.max() - flatness.min() if len(flatness) > 0 else numpy.nan
 
@@ -571,11 +578,10 @@ class SubaruIsrTask(IsrTask):
         metadata.set('FLATNESS_MESHX', self.config.qa.flatness.meshX)
         metadata.set('FLATNESS_MESHY', self.config.qa.flatness.meshY)
 
-
     def guider(self, exposure):
         raise NotImplementedError(
             "Guider shadow trimming is enabled but no generic implementation is present"
-            )
+        )
 
     def linearize(self, exposure):
         """Correct for non-linearity
@@ -599,10 +605,10 @@ class SubaruIsrTask(IsrTask):
             linearityType = amp.getLinearityType()
 
             ampImage = afwImage.MaskedImageF(exposure.getMaskedImage(), amp.getBBox(),
-                                                 afwImage.PARENT)
+                                             afwImage.PARENT)
 
             imageTypeMax = 65535        # should be a method on the image
-            setSuspectPixels = linearityMaxCorrectable < imageTypeMax # there might be some
+            setSuspectPixels = linearityMaxCorrectable < imageTypeMax  # there might be some
 
             if not setSuspectPixels and linearityCoefficient == 0.0:
                 continue                # nothing to do
@@ -628,7 +634,6 @@ class SubaruIsrTask(IsrTask):
 
         if linearized:
             self.log.log(self.log.INFO, "Applying linearity corrections to Ccd %s" % (ccd.getId()))
-
 
     def flatCorrection(self, exposure, flatExposure):
         """Apply flat correction in-place
@@ -669,7 +674,7 @@ class SubaruIsrTask(IsrTask):
 
     def roughZeroPoint(self, exposure):
         """Set an approximate magnitude zero point for the exposure"""
-        filterName = afwImage.Filter(exposure.getFilter().getId()).getName() # Canonical name for filter
+        filterName = afwImage.Filter(exposure.getFilter().getId()).getName()  # Canonical name for filter
         if filterName in self.config.fluxMag0T1:
             fluxMag0 = self.config.fluxMag0T1[filterName]
         else:
@@ -684,9 +689,11 @@ class SubaruIsrTask(IsrTask):
 
 
 class SuprimecamIsrConfig(SubaruIsrConfig):
+
     def setDefaults(self):
         super(SuprimecamIsrConfig, self).setDefaults()
         self.crosstalk.retarget(YagiCrosstalkTask)
+
 
 class SuprimeCamIsrTask(SubaruIsrTask):
     ConfigClass = SuprimecamIsrConfig
@@ -698,7 +705,7 @@ class SuprimeCamIsrTask(SubaruIsrTask):
         """
         assert exposure, "No exposure provided"
 
-        ccd = exposure.getDetector() # This is Suprime-Cam so we know the Detector is a Ccd
+        ccd = exposure.getDetector()  # This is Suprime-Cam so we know the Detector is a Ccd
         ccdNum = ccd.getId().getSerial()
         if ccdNum not in [0, 1, 2, 6, 7]:
             # No need to mask
@@ -711,10 +718,9 @@ class SuprimeCamIsrTask(SubaruIsrTask):
 
         xGuider = md.get("S_AG-X")
         if ccdNum in [1, 2, 7]:
-            maskLimit = int(60.0 * xGuider - 2300.0) # From SDFRED
+            maskLimit = int(60.0 * xGuider - 2300.0)  # From SDFRED
         elif ccdNum in [0, 6]:
-            maskLimit = int(60.0 * xGuider - 2000.0) # From SDFRED
-
+            maskLimit = int(60.0 * xGuider - 2000.0)  # From SDFRED
 
         mi = exposure.getMaskedImage()
         height = mi.getHeight()
@@ -741,8 +747,10 @@ class SuprimeCamIsrTask(SubaruIsrTask):
             good = mi.Factory(mi, bbox, afwImage.LOCAL)
             exposure.setMaskedImage(good)
 
+
 class SuprimeCamMitIsrConfig(SubaruIsrTask.ConfigClass):
     pass
+
 
 class SuprimeCamMitIsrTask(SubaruIsrTask):
 
@@ -755,7 +763,7 @@ class SuprimeCamMitIsrTask(SubaruIsrTask):
         """
         assert exposure, "No exposure provided"
 
-        ccd = exposure.getDetector() # This is Suprime-Cam so we know the Detector is a Ccd
+        ccd = exposure.getDetector()  # This is Suprime-Cam so we know the Detector is a Ccd
         ccdNum = ccd.getId().getSerial()
         if ccdNum not in [0, 1, 4, 5, 9]:
             # No need to mask
@@ -768,10 +776,9 @@ class SuprimeCamMitIsrTask(SubaruIsrTask):
 
         xGuider = md.get("S_AG-X")
         if ccdNum in [1, 4, 5]:
-            maskLimit = int(60.0 * xGuider - 2300.0) # From SDFRED
+            maskLimit = int(60.0 * xGuider - 2300.0)  # From SDFRED
         elif ccdNum in [0, 9]:
-            maskLimit = int(60.0 * xGuider - 2000.0) # From SDFRED
-
+            maskLimit = int(60.0 * xGuider - 2000.0)  # From SDFRED
 
         mi = exposure.getMaskedImage()
         height = mi.getHeight()

@@ -28,6 +28,7 @@ import matplotlib.pyplot as plt
 import lsst.afw.cameraGeom as cameraGeom
 import lsst.afw.geom as afwGeom
 
+
 def main(camera, sample=20, names=False, showDistortion=True, plot=True, outputFile=None):
     if plot:
         fig = plt.figure(1)
@@ -46,8 +47,8 @@ def main(camera, sample=20, names=False, showDistortion=True, plot=True, outputF
 
             width, height = ccd.getAllPixels(True).getDimensions()
 
-            corners = ((0.0,0.0), (0.0, height), (width, height), (width, 0.0), (0.0, 0.0))
-            for (x0, y0), (x1, y1) in zip(corners[0:4],corners[1:5]):
+            corners = ((0.0, 0.0), (0.0, height), (width, height), (width, 0.0), (0.0, 0.0))
+            for (x0, y0), (x1, y1) in zip(corners[0:4], corners[1:5]):
                 if x0 == x1 and y0 != y1:
                     yList = numpy.linspace(y0, y1, num=sample)
                     xList = [x0] * len(yList)
@@ -57,10 +58,12 @@ def main(camera, sample=20, names=False, showDistortion=True, plot=True, outputF
                 else:
                     raise RuntimeError("Should never get here")
 
-                xOriginal = []; yOriginal = []
-                xDistort = []; yDistort = []
+                xOriginal = []
+                yOriginal = []
+                xDistort = []
+                yDistort = []
                 for x, y in zip(xList, yList):
-                    position = ccd.getPositionFromPixel(afwGeom.Point2D(x,y)) # focal plane position
+                    position = ccd.getPositionFromPixel(afwGeom.Point2D(x, y))  # focal plane position
 
                     xOriginal.append(position.getMm().getX())
                     yOriginal.append(position.getMm().getY())
@@ -81,7 +84,7 @@ def main(camera, sample=20, names=False, showDistortion=True, plot=True, outputF
                     ax.plot(xDistort, yDistort, 'r-')
 
             if fig:
-                x,y = ccd.getPositionFromPixel(afwGeom.Point2D(width/2, height/2)).getMm()
+                x, y = ccd.getPositionFromPixel(afwGeom.Point2D(width/2, height/2)).getMm()
                 cid = ccd.getId()
                 if names:
                     ax.text(x, y, cid.getName(), ha='center', rotation=90 if height > width else 0,
@@ -130,4 +133,5 @@ if __name__ == '__main__':
     main(camera, names=args.names, sample=2, outputFile=args.outputFile,
          showDistortion=not args.noDistortion)
     if not args.outputFile:
-        print "Hit any key to exit",; raw_input()
+        print "Hit any key to exit",
+        raw_input()

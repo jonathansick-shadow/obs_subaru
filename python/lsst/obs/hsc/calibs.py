@@ -8,6 +8,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom as afwcg
 
+
 class HscFlatCombineConfig(FlatCombineConfig):
     vignette = ConfigField(dtype=VignetteConfig, doc="Vignetting parameters in focal plane coordinates")
     badAmpCcdList = ListField(dtype=int, default=[], doc="List of CCD serial numbers for bad amplifiers")
@@ -19,9 +20,11 @@ class HscFlatCombineConfig(FlatCombineConfig):
         if len(self.badAmpCcdList) != len(self.badAmpList):
             raise RuntimeError("Length of badAmpCcdList and badAmpList don't match")
 
+
 class HscFlatCombineTask(FlatCombineTask):
     """Mask the vignetted area"""
     ConfigClass = HscFlatCombineConfig
+
     def run(self, sensorRefList, *args, **kwargs):
         """Mask vignetted pixels after combining
 
@@ -53,9 +56,9 @@ class HscFlatCombineTask(FlatCombineTask):
         mask.addMaskPlane(self.config.maskPlane)
         bitMask = mask.getPlaneBitMask(self.config.maskPlane)
         w, h = mask.getWidth(), mask.getHeight()
-        numCorners = 0 # Number of corners outside radius
+        numCorners = 0  # Number of corners outside radius
         for i, j in ((0, 0), (0, h-1), (w-1, 0), (w-1, h-1)):
-            x,y = detector.getPositionFromPixel(afwGeom.PointD(i, j)).getMm()
+            x, y = detector.getPositionFromPixel(afwGeom.PointD(i, j)).getMm()
             if math.hypot(x - self.config.vignette.xCenter, y - self.config.vignette.yCenter) > self.config.vignette.radius:
                 numCorners += 1
         if numCorners == 0:

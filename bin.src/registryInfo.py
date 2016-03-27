@@ -30,6 +30,7 @@ try:
 except ImportError:
     import sqlite
 
+
 def formatVisits(visits):
     """Format a set of visits into the format used for an --id argument"""
     visits = sorted(visits)
@@ -40,15 +41,16 @@ def formatVisits(visits):
         v0 = -1
 
         while i < len(visits):
-            v = visits[i]; i += 1
+            v = visits[i]
+            i += 1
             if v0 < 0:
                 v0 = v
                 dv = -1                 # visit stride
                 continue
-            
+
             if dv < 0:
                 dv = v - v0
-            
+
             if visits[i - 2] + dv != v:
                 i -= 1                  # process this visit again later
                 v = visits[i - 1]       # previous value of v
@@ -68,10 +70,11 @@ def formatVisits(visits):
 
     return "^".join(visitSummary)
 
-    
+
 def queryRegistry(field=None, visit=None, filterName=None, summary=False):
     """Query an input registry"""
-    where = []; vals = []
+    where = []
+    vals = []
     if field:
         where.append('field like ?')
         vals.append(field.replace("*", "%"))
@@ -91,10 +94,12 @@ GROUP BY visit
 ORDER BY max(filter), visit
 """ % (where)
 
-    n = {}; expTimes = {}; visits = {}
+    n = {}
+    expTimes = {}
+    visits = {}
 
     conn = sqlite.connect(registryFile)
-        
+
     cursor = conn.cursor()
 
     if args.summary:
@@ -130,9 +135,11 @@ ORDER BY max(filter), visit
 
             print "%-7s %-20s %7.1f %s" % (filter, field, expTimes[k], formatVisits(visits[k]))
 
+
 def queryCalibRegistry(what, filterName=None, summary=False):
     """Query a calib registry"""
-    where = []; vals = []
+    where = []
+    vals = []
 
     if filterName:
         where.append('filter like ?')
@@ -148,7 +155,9 @@ GROUP BY filter, calibDate
 ORDER BY filter, calibDate
 """ % (what, where)
 
-    n = {}; expTimes = {}; visits = {}
+    n = {}
+    expTimes = {}
+    visits = {}
 
     conn = sqlite.connect(registryFile)
 
@@ -188,7 +197,7 @@ If no registry is provided, try $SUPRIME_DATA_DIR
     parser.add_argument('--verbose', action="store_true", help="How chatty should I be?", default=0)
     parser.add_argument('--visit', type=int, help="Just tell me about this visit")
     parser.add_argument('-s', '--summary', action="store_true", help="Print summary (grouped by field)")
-    
+
     args = parser.parse_args()
 
     if not args.registryFile:

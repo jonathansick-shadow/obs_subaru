@@ -3,8 +3,8 @@ config.skyMap = "discrete"
 # Configuration for HealpixSkyMap
 config.skyMap["healpix"].log2NSide = 5
 config.skyMap["healpix"].pixelScale = 0.18
-config.skyMap["healpix"].patchBorder = 333 # Pixels
-config.skyMap["healpix"].tractOverlap = 2.0/60 # Degrees
+config.skyMap["healpix"].patchBorder = 333  # Pixels
+config.skyMap["healpix"].tractOverlap = 2.0/60  # Degrees
 config.skyMap["healpix"].projection = "TAN"
 
 # Configuration for DiscreteSkyMap

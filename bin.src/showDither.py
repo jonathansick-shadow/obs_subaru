@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-import argparse, fnmatch, os, re, sys
+import argparse
+import fnmatch
+import os
+import re
+import sys
 
 import numpy as np
 import lsst.afw.geom as afwGeom
@@ -16,13 +20,15 @@ except NameError:
 
     plt.interactive(1)
 
+
 def main(butler, visits, fields, fieldRadius, showCCDs=False, aitoff=False, alpha=0.2,
          byFilter=False, byVisit=False, title="", verbose=False):
     camera = butler.get("camera")
 
     ra, dec = [], []
     filters = {}
-    _visits = visits; visits = []
+    _visits = visits
+    visits = []
     for v in _visits:
         try:
             exp = butler.get("raw", visit=v, ccd=49)
@@ -33,10 +39,10 @@ def main(butler, visits, fields, fieldRadius, showCCDs=False, aitoff=False, alph
 
         ccd = exp.getDetector()
 
-        xy = ccd.getPixelFromPosition(afwCG.FpPoint(0,0))
+        xy = ccd.getPixelFromPosition(afwCG.FpPoint(0, 0))
         sky = exp.getWcs().pixelToSky(xy)
         visits.append(v)
-        ra.append( sky[0].asDegrees())
+        ra.append(sky[0].asDegrees())
         dec.append(sky[1].asDegrees())
         filters[v] = exp.getFilter().getName()
 
@@ -62,19 +68,20 @@ def main(butler, visits, fields, fieldRadius, showCCDs=False, aitoff=False, alph
                             )
     else:
         ctypeKeys = {}
-        colors = list("rgbcmyk") + ["orange", "brown", "orchid"] # colours for ctypeKeys
+        colors = list("rgbcmyk") + ["orange", "brown", "orchid"]  # colours for ctypeKeys
 
     if aitoff:
         fieldRadius = np.radians(fieldRadius)
         dec = np.radians(dec)
         ra = np.array(ra)
-        ra  = np.radians(np.where(ra > 180, ra - 360, ra))
+        ra = np.radians(np.where(ra > 180, ra - 360, ra))
 
     plots, labels = [], []
     for v, r, d in zip(visits, ra, dec):
         field = fields.get(v)
         if verbose:
-            print "Drawing %s %s         \r" % (v, field),; sys.stdout.flush()
+            print "Drawing %s %s         \r" % (v, field),
+            sys.stdout.flush()
 
         if byFilter:
             facecolor = ctypes.get(field, ctypeFilters.get(filters[v], "gray"))
@@ -89,7 +96,7 @@ def main(butler, visits, fields, fieldRadius, showCCDs=False, aitoff=False, alph
         axes.add_artist(circ)
 
         if showCCDs:
-            pathCodes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY,]
+            pathCodes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY, ]
 
             for ccd in butler.queryMetadata("raw", "visit", ["ccd"], visit=v):
                 try:
@@ -116,17 +123,18 @@ def main(butler, visits, fields, fieldRadius, showCCDs=False, aitoff=False, alph
             key = v if byVisit else field
 
         if not labels.count(key):
-            plots.append(Circle((0,0), facecolor=facecolor)); labels.append(key)
+            plots.append(Circle((0, 0), facecolor=facecolor))
+            labels.append(key)
 
     plt.legend(plots, labels,
                loc='best', bbox_to_anchor=(0, 1.02, 1, 0.102)).draggable()
 
     if not aitoff:
-        raRange = np.max(ra)   - np.min(ra)  + 1.2*fieldRadius
+        raRange = np.max(ra) - np.min(ra) + 1.2*fieldRadius
         decRange = np.max(dec) - np.min(dec) + 1.2*fieldRadius
         raRange *= np.cos(np.radians(np.mean(dec)))
 
-        plt.xlim(0.5*(np.max(ra)  + np.min(ra))  +  raRange*np.array((1, -1)))
+        plt.xlim(0.5*(np.max(ra) + np.min(ra)) + raRange*np.array((1, -1)))
         plt.ylim(0.5*(np.max(dec) + np.min(dec)) + decRange*np.array((-1, 1)))
 
     plt.xlabel("ra")
@@ -145,7 +153,8 @@ E.g.
 """)
 
     parser.add_argument('dataDir', type=str, nargs="?", help='Directory to search for data')
-    parser.add_argument('--visits', type=str, help='Desired visits (you may use .. and ^ as in pipe_base --id)')
+    parser.add_argument('--visits', type=str,
+                        help='Desired visits (you may use .. and ^ as in pipe_base --id)')
     parser.add_argument('--field', type=str, help='Desired field (e.g. STRIPE82L)')
     parser.add_argument('--filter', type=str, help='Desired filter (e.g. g or HSC-R)')
     parser.add_argument('--exclude', type=str, nargs="*",
@@ -188,7 +197,8 @@ E.g.
             if mat:
                 v1 = int(mat.group(1))
                 v2 = int(mat.group(2))
-                v3 = mat.group(3); v3 = int(v3) if v3 else 1
+                v3 = mat.group(3)
+                v3 = int(v3) if v3 else 1
                 for v in range(v1, v2 + 1, v3):
                     visits.append(v)
             else:
@@ -224,7 +234,8 @@ E.g.
 
     fields = dict(butler.queryMetadata("raw", "visit", ["visit", "field"]))
     if args.exclude:
-        _visits = visits; visits = []
+        _visits = visits
+        visits = []
         for v in _visits:
             keep = True
             field = fields.get(v)
@@ -251,7 +262,8 @@ E.g.
                verbose=args.verbose)
 
     if args.verbose:
-        print "                          \r",; sys.stdout.flush()
+        print "                          \r",
+        sys.stdout.flush()
 
     if args.fileName:
         plt.savefig(args.fileName)

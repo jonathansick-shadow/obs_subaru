@@ -4,7 +4,7 @@ import lsst.afw.table as afwTable
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom as cameraGeom
 from lsst.afw.cameraGeom import SCIENCE, FOCAL_PLANE, PUPIL, CameraConfig, DetectorConfig,\
-                                makeCameraFromCatalogs
+    makeCameraFromCatalogs
 
 import argparse
 import eups
@@ -14,7 +14,8 @@ import shutil
 
 FOCAL_PLANE_PIXELS = cameraGeom.CameraSys('Focal_Plane_Pixels')
 
-PIXELSIZE = 1.0 # LSST likes to use mm/pix, but Subaru works in pixels
+PIXELSIZE = 1.0  # LSST likes to use mm/pix, but Subaru works in pixels
+
 
 def makeDir(dirPath, doClobber=False):
     """Make a directory; if it exists then clobber or fail, depending on doClobber
@@ -32,6 +33,7 @@ def makeDir(dirPath, doClobber=False):
             raise RuntimeError("Directory %r exists" % (dirPath,))
     print "Creating directory %r" % (dirPath,)
     os.makedirs(dirPath)
+
 
 def makeCameraFromPolicy(filename, cameraname, writeRepo=False, outputDir=None, doClobber=False, shortNameMethod=lambda x: x):
     """Make a camera repository suitable for reading by the butler using a policy file
@@ -71,6 +73,7 @@ def makeCameraFromPolicy(filename, cameraname, writeRepo=False, outputDir=None, 
 
     return makeCameraFromCatalogs(camConfig, ccdInfoDict['ampInfo'])
 
+
 def parseCamera(policy, cameraname):
     """ Parse a policy file for a Camera object
     @param[in] policy  pexPolicy.Policy object to parse
@@ -82,13 +85,13 @@ def parseCamera(policy, cameraname):
     camConfig.name = camPolicy.get('name')
     camConfig.plateScale = PIXELSIZE
 
-    #Need to invert because this is stored with FOCAL_PLANE to PUPIL as the
-    #forward transform: only for HSC
+    # Need to invert because this is stored with FOCAL_PLANE to PUPIL as the
+    # forward transform: only for HSC
     if cameraname.lower() == 'hsc':
         tConfig = afwGeom.TransformConfig()
         tConfig.transform.name = 'hsc'
     else:
-        #I don't know what the PUPIL transform is for non-HSC cameras is
+        # I don't know what the PUPIL transform is for non-HSC cameras is
         tConfig = afwGeom.TransformConfig()
         tConfig.transform.name = 'identity'
     tpConfig = afwGeom.TransformConfig()
@@ -97,9 +100,10 @@ def parseCamera(policy, cameraname):
 
     tmc = afwGeom.TransformMapConfig()
     tmc.nativeSys = FOCAL_PLANE.getSysName()
-    tmc.transforms = {PUPIL.getSysName():tConfig, FOCAL_PLANE_PIXELS.getSysName():tpConfig}
+    tmc.transforms = {PUPIL.getSysName(): tConfig, FOCAL_PLANE_PIXELS.getSysName(): tpConfig}
     camConfig.transformDict = tmc
     return camConfig
+
 
 def makeAmpParams(policy):
     """ Parse amplifier parameters from a Policy object
@@ -115,6 +119,7 @@ def makeAmpParams(policy):
         retParams[amp.get('ptype')]['eheight'] = amp.get('eheight')
     return retParams
 
+
 def makeCcdParams(policy, ampParms):
     """ Make a dictionary of CCD parameters from a pexPolicy.Policy
     @param[in] policy  pexPolicy.Policy object to parse
@@ -125,8 +130,8 @@ def makeCcdParams(policy, ampParms):
     for ccd in policy.getArray('Ccd'):
         ptype = ccd.get('ptype')
         tdict = {}
-        #The policy file has units of pixels, but to get to
-        #pupil coords we need to work in units of mm
+        # The policy file has units of pixels, but to get to
+        # pupil coords we need to work in units of mm
         tdict['pixelSize'] = PIXELSIZE
         tdict['offsetUnit'] = ccd.get('offsetUnit')
         tdict['ampArr'] = []
@@ -135,17 +140,18 @@ def makeCcdParams(policy, ampParms):
         for amp in ccd.getArray('Amp'):
             parms = copy.copy(ampParms[amp.get('ptype')])
             xsize += parms['datasec'][2] - parms['datasec'][0] + 1
-            #I think the subaru chips only have a single row of amps
+            # I think the subaru chips only have a single row of amps
             ysize = parms['datasec'][3] - parms['datasec'][1] + 1
             parms['id'] = amp.get('serial')
             parms['flipX'] = amp.get('flipLR')
-            #As far as I know there is no bilateral symmetry in subaru cameras
+            # As far as I know there is no bilateral symmetry in subaru cameras
             parms['flipY'] = False
             tdict['ampArr'].append(parms)
         tdict['xsize'] = xsize
         tdict['ysize'] = ysize
         retParams[ptype] = tdict
     return retParams
+
 
 def makeEparams(policy):
     """ Make a dictionary of parameters describing the amps
@@ -168,6 +174,7 @@ def makeEparams(policy):
             eparms[ccd.get('name')].append(eparm)
     return eparms
 
+
 def makeLparams(policy):
     """Return a dictionary of amp linearity properties for this amp
 
@@ -188,6 +195,7 @@ def makeLparams(policy):
             lparm['intensityUnits'] = amp.get('intensityUnits')
             lparms[ccd.get('serial')].append(lparm)
     return lparms
+
 
 def addAmp(ampCatalog, amp, eparams, lparams):
     """ Add an amplifier to an AmpInfoCatalog
@@ -216,11 +224,11 @@ def addAmp(ampCatalog, amp, eparams, lparams):
                               afwGeom.Point2I(dataSec.getMax().getX(), allPixels.getMax().getY()))
 
     pscanSec = afwGeom.Box2I(afwGeom.Point2I(extended, 0),
-                             afwGeom.Point2I(dataSec.getMax().getX(),pscan-1))
+                             afwGeom.Point2I(dataSec.getMax().getX(), pscan-1))
 
     if amp['flipX']:
-        #No need to flip bbox or allPixels since they
-        #are at the origin and span the full pixel grid
+        # No need to flip bbox or allPixels since they
+        # are at the origin and span the full pixel grid
         biasSec.flipLR(xtot)
         dataSec.flipLR(xtot)
         voscanSec.flipLR(xtot)
@@ -237,7 +245,7 @@ def addAmp(ampCatalog, amp, eparams, lparams):
     pscanSec.shift(shiftp)
 
     record.setBBox(bbox)
-    record.setRawXYOffset(afwGeom.ExtentI(0,0))
+    record.setRawXYOffset(afwGeom.ExtentI(0, 0))
     record.setName("%i"%(eparams['index'][0],))
     record.setReadoutCorner(afwTable.LR if amp['flipX'] else afwTable.LL)
     record.setGain(eparams['gain'])
@@ -246,7 +254,7 @@ def addAmp(ampCatalog, amp, eparams, lparams):
     # Using available slots in linearityCoeffs to store linearity information given in
     # hsc_geom.paf: 0: cofficient, 1: threshold, 2: maxCorrectable
     record.setLinearityType(lparams['type'])
-    record.setLinearityCoeffs([lparams['coefficient'],lparams['threshold'],lparams['maxCorrectable'],])
+    record.setLinearityCoeffs([lparams['coefficient'], lparams['threshold'], lparams['maxCorrectable'], ])
     record.setHasRawInfo(True)
     record.setRawFlipX(False)
     record.setRawFlipY(False)
@@ -255,6 +263,7 @@ def addAmp(ampCatalog, amp, eparams, lparams):
     record.setRawHorizontalOverscanBBox(biasSec)
     record.setRawVerticalOverscanBBox(voscanSec)
     record.setRawPrescanBBox(pscanSec)
+
 
 def parseCcds(policy, ccdParams, ccdToUse=None):
     """ parse a policy into a set of ampInfo and detectorConfig objects
@@ -265,12 +274,12 @@ def parseCcds(policy, ccdParams, ccdToUse=None):
     with the 'ampInfo' key
     """
     # The pafs I have now in the hsc dir include the focus sensors (but not the guiders)
-    specialChipMap = {'108':cameraGeom.FOCUS, '110':cameraGeom.FOCUS, '111':cameraGeom.FOCUS,
-                      '107':cameraGeom.FOCUS, '105':cameraGeom.FOCUS, '104':cameraGeom.FOCUS,
-                      '109':cameraGeom.FOCUS, '106':cameraGeom.FOCUS}
+    specialChipMap = {'108': cameraGeom.FOCUS, '110': cameraGeom.FOCUS, '111': cameraGeom.FOCUS,
+                      '107': cameraGeom.FOCUS, '105': cameraGeom.FOCUS, '104': cameraGeom.FOCUS,
+                      '109': cameraGeom.FOCUS, '106': cameraGeom.FOCUS}
     eParams = makeEparams(policy)
     lParams = makeLparams(policy)
-    ampInfoDict ={}
+    ampInfoDict = {}
     ccdInfoList = []
     rafts = policy.getArray('Raft')
     if len(rafts) > 1:
@@ -284,7 +293,7 @@ def parseCcds(policy, ccdParams, ccdToUse=None):
         else:
             ccdParam = ccdParams[ccd.get('ptype')]
         detConfig.name = ccd.get('name')
-        #This should be the serial number on the device, but for now is an integer id
+        # This should be the serial number on the device, but for now is an integer id
         detConfig.serial = str(ccd.get('serial'))
         detConfig.id = ccd.get('serial')
         offset = ccd.getArray('offset')
@@ -319,12 +328,12 @@ def parseCcds(policy, ccdParams, ccdToUse=None):
             lparms = None
             # Only science ccds (serial 0 through 103) have linearity params defined in hsc_geom.paf
             if detConfig.detectorType is SCIENCE:
-                if lParams.has_key(ccd.get('serial')) :
+                if lParams.has_key(ccd.get('serial')):
                     for ep in lParams[ccd.get('serial')]:
                         if amp['id'] == ep['index']:
                             lparms = ep
                 if lparms is None:
-                    if lParams.has_key(-1): # defaults in suprimecam/Full_Suprimecam*_geom.paf
+                    if lParams.has_key(-1):  # defaults in suprimecam/Full_Suprimecam*_geom.paf
                         for ep in lParams[-1]:
                             if amp['id'] == ep['index']:
                                 lparms = ep
@@ -341,7 +350,7 @@ def parseCcds(policy, ccdParams, ccdToUse=None):
             addAmp(ampCatalog, amp, eparms, lparms)
         ampInfoDict[ccd.get('name')] = ampCatalog
         ccdInfoList.append(detConfig)
-    return {"ccdInfo":ccdInfoList, "ampInfo":ampInfoDict}
+    return {"ccdInfo": ccdInfoList, "ampInfo": ampInfoDict}
 
 if __name__ == "__main__":
     baseDir = eups.productDir("obs_subaru")
@@ -351,7 +360,7 @@ if __name__ == "__main__":
     parser.add_argument("InstrumentName", help="Name of the instrument (hsc, suprimecam)")
     parser.add_argument("OutputDir", help="Location for the persisted camerea")
     parser.add_argument("--clobber", action="store_true", dest="clobber", default=False,
-        help="remove and re-create the output directory if it exists")
+                        help="remove and re-create the output directory if it exists")
     args = parser.parse_args()
 
     if args.InstrumentName.lower() == 'hsc':
@@ -362,4 +371,4 @@ if __name__ == "__main__":
         mapper = SuprimecamMapper
 
     camera = makeCameraFromPolicy(args.LayoutPolicy, args.InstrumentName, writeRepo=True, outputDir=args.OutputDir, doClobber=args.clobber,
-        shortNameMethod=mapper.getShortCcdName)
+                                  shortNameMethod=mapper.getShortCcdName)

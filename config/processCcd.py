@@ -36,9 +36,9 @@ config.calibrate.detectAndMeasure.measurement.plugins['base_ClassificationExtend
 config.calibrate.photoCal.applyColorTerms = True
 
 from lsst.pipe.tasks.setConfigFromEups import setConfigFromEups
-menu = { "ps1*": {}, # Defaults are fine
-         "sdss*": {"refObjLoader.filterMap": {"y": "z"}}, # No y-band, use z instead
-         "2mass*": {"refObjLoader.filterMap": {ff: "J" for ff in "grizy"}}, # No optical bands, use J instead
+menu = {"ps1*": {},  # Defaults are fine
+        "sdss*": {"refObjLoader.filterMap": {"y": "z"}},  # No y-band, use z instead
+        "2mass*": {"refObjLoader.filterMap": {ff: "J" for ff in "grizy"}},  # No optical bands, use J instead
         }
 setConfigFromEups(config.calibrate.photoCal, config.calibrate.astrometry, menu)
 
@@ -61,9 +61,11 @@ if "ext_shapeHSM_HsmShapeRegauss" in config.calibrate.detectAndMeasure.measureme
     config.calibrate.detectAndMeasure.measurement.plugins["ext_shapeHSM_HsmShapeRegauss"].deblendNChild = ""
 
 # Deblender
-config.charImage.detectAndMeasure.deblend.maskLimits["NO_DATA"] = 0.25 # Ignore sources that are in the vignetted region
+config.charImage.detectAndMeasure.deblend.maskLimits[
+    "NO_DATA"] = 0.25  # Ignore sources that are in the vignetted region
 config.charImage.detectAndMeasure.deblend.maxFootprintArea = 10000
-config.calibrate.detectAndMeasure.deblend.maskLimits["NO_DATA"] = 0.25 # Ignore sources that are in the vignetted region
+config.calibrate.detectAndMeasure.deblend.maskLimits[
+    "NO_DATA"] = 0.25  # Ignore sources that are in the vignetted region
 config.calibrate.detectAndMeasure.deblend.maxFootprintArea = 10000
 
 config.charImage.detectAndMeasure.measurement.plugins.names |= ["base_Jacobian"]

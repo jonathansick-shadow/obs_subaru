@@ -26,13 +26,15 @@ rings.plotRadial(r, profs, xlim=(-100, 5500), ylim=(0.8, 1.03))
 """
 
 import multiprocessing
-import os, re, sys
+import os
+import re
+import sys
 import numpy as np
 
 import lsst.afw.cameraGeom.utils as cgUtils
-import lsst.afw.geom        as afwGeom
-import lsst.afw.image       as afwImage
-import lsst.afw.math        as afwMath
+import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
+import lsst.afw.math as afwMath
 import lsst.afw.display.ds9 as ds9
 import lsst.afw.display.utils as ds9Utils
 import lsst.analysis.utils as utils
@@ -42,6 +44,7 @@ try:
 except NameError:
     import matplotlib.pyplot as pyplot
     pyplot.interactive(1)
+
 
 def fitPlane(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False):
     """Fit a plane to the image im using a linear fit with an nsigma clip"""
@@ -60,7 +63,7 @@ def fitPlane(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False):
 
     sctrl = afwMath.StatisticsControl()
     sctrl.setAndMask(afwImage.MaskU.getPlaneBitMask("BAD"))
-    z, dzdx, dzdy = afwMath.makeStatistics(mi, afwMath.MEANCLIP, sctrl).getValue(), 0, 0 # initial guess
+    z, dzdx, dzdy = afwMath.makeStatistics(mi, afwMath.MEANCLIP, sctrl).getValue(), 0, 0  # initial guess
 
     returnResidualImage = True
     if returnResidualImage:
@@ -94,6 +97,7 @@ def fitPlane(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False):
     else:
         return b, None
 
+
 def fitPatches(exp, nx=4, ny=8, bin=None, frame=None, returnResidualImage=False,
                r=None, lnGrad=None, theta=None):
     """Fit planes to a set of patches of an image im
@@ -112,7 +116,8 @@ values of r, theta, and dlnI/dr from this image appended.
 
     if frame is not None:
         frame0 = frame
-        ds9.mtv(exp,   title="im",    frame=frame) if True else None; frame += 1
+        ds9.mtv(exp, title="im", frame=frame) if True else None
+        frame += 1
 
     if hasattr(exp, "getMaskedImage"):
         mi = exp.getMaskedImage()
@@ -130,10 +135,14 @@ values of r, theta, and dlnI/dr from this image appended.
         assert ccd is not None, "I need a CCD to set r and the logarithmic gradient"
         assert r is not None and lnGrad is not None, "Please provide both r and lnGrad"
 
-    z = afwImage.ImageF(nx, ny);      za = z.getArray()
-    dlnzdx = afwImage.ImageF(nx, ny); dlnzdxa = dlnzdx.getArray()
-    dlnzdy = afwImage.ImageF(nx, ny); dlnzdya = dlnzdy.getArray()
-    dlnzdr = afwImage.ImageF(nx, ny); dlnzdra = dlnzdr.getArray()
+    z = afwImage.ImageF(nx, ny)
+    za = z.getArray()
+    dlnzdx = afwImage.ImageF(nx, ny)
+    dlnzdxa = dlnzdx.getArray()
+    dlnzdy = afwImage.ImageF(nx, ny)
+    dlnzdya = dlnzdy.getArray()
+    dlnzdr = afwImage.ImageF(nx, ny)
+    dlnzdra = dlnzdr.getArray()
     if returnResidualImage:
         residualImage = mi.clone()
         try:
@@ -160,7 +169,7 @@ values of r, theta, and dlnI/dr from this image appended.
 
                 if ccd:
                     cen = afwGeom.PointD(bbox.getBegin() + bbox.getDimensions()/2)
-                    x, y = ccd.getPositionFromPixel(cen).getMm() # I really want pixels here
+                    x, y = ccd.getPositionFromPixel(cen).getMm()  # I really want pixels here
                     t = np.arctan2(y, x)
                     dlnzdra[iy, ix] = np.cos(t)*dlnzdxa[iy, ix] + np.sin(t)*dlnzdya[iy, ix]
 
@@ -173,16 +182,23 @@ values of r, theta, and dlnI/dr from this image appended.
 
     if frame is not None:
         if False:
-            ds9.mtv(z,    title="z",     frame=frame); frame += 1
-            ds9.mtv(dlnzdx, title="dlnz/dx", frame=frame); frame += 1
-            ds9.mtv(dlnzdy, title="dlnz/dy", frame=frame); frame += 1
-        ds9.mtv(residualImage, title="res",     frame=frame); frame += 1
-        ds9.mtv(dlnzdr, title="dlnz/dr %s" % (ccd.getId().getSerial() if ccd else ""), frame=frame); frame += 1
+            ds9.mtv(z, title="z", frame=frame)
+            frame += 1
+            ds9.mtv(dlnzdx, title="dlnz/dx", frame=frame)
+            frame += 1
+            ds9.mtv(dlnzdy, title="dlnz/dy", frame=frame)
+            frame += 1
+        ds9.mtv(residualImage, title="res", frame=frame)
+        frame += 1
+        ds9.mtv(dlnzdr, title="dlnz/dr %s" % (ccd.getId().getSerial() if ccd else ""), frame=frame)
+        frame += 1
 
     return dlnzdx, dlnzdy, dlnzdr, residualImage
 
+
 class FitPatchesWork(object):
     """Given a bin factor and dataId, return r, theta, and lnGrad arrays"""
+
     def __init__(self, butler, bin, verbose=False):
         self.butler = butler
         self.bin = bin
@@ -199,8 +215,10 @@ class FitPatchesWork(object):
             return None
 
         if False:
-            msk=raw.getMaskedImage().getMask()
-            BAD=msk.getPlaneBitMask("BAD"); msk |= BAD; msk[15:-15, 20:-20] &= ~BAD
+            msk = raw.getMaskedImage().getMask()
+            BAD = msk.getPlaneBitMask("BAD")
+            msk |= BAD
+            msk[15:-15, 20:-20] &= ~BAD
 
         r, lnGrad, theta = [], [], []
         fitPatches(raw, bin=self.bin, r=r, lnGrad=lnGrad, theta=theta)
@@ -208,6 +226,7 @@ class FitPatchesWork(object):
         return r, theta, lnGrad
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 
 def fitRadialParabola(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False):
     """Fit a radial parabola (centered at (0, 0) to the image im using a linear fit with an nsigma clip"""
@@ -227,7 +246,7 @@ def fitRadialParabola(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False
 
     sctrl = afwMath.StatisticsControl()
     sctrl.setAndMask(afwImage.MaskU.getPlaneBitMask("BAD"))
-    c0, c1, c2 = afwMath.makeStatistics(mi, afwMath.MEANCLIP, sctrl).getValue(), 0, 0 # initial guess
+    c0, c1, c2 = afwMath.makeStatistics(mi, afwMath.MEANCLIP, sctrl).getValue(), 0, 0  # initial guess
     c00 = c0
 
     returnResidualImage = True
@@ -258,7 +277,7 @@ def fitRadialParabola(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False
         c0, c1, c2 = b
 
     if returnResidualImage:             # need to update with latest values
-        fit = (c0 - c00) + c1*R + c2*R**2 # n.b. not c0
+        fit = (c0 - c00) + c1*R + c2*R**2  # n.b. not c0
         resim.getArray()[:] = im.getArray() - fit.reshape(height, width)
 
         return b, res
@@ -266,6 +285,7 @@ def fitRadialParabola(mi, niter=3, tol=1e-5, nsigma=5, returnResidualImage=False
         return b, None
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 
 class LnGradImage(cgUtils.GetCcdImage):
     """A class to return an Image dlnI/dr for a CCD, e.g.
@@ -313,7 +333,7 @@ class LnGradImage(cgUtils.GetCcdImage):
 
             if False:
                 msk = raw.getMaskedImage().getMask()
-                BAD=msk.getPlaneBitMask("BAD")
+                BAD = msk.getPlaneBitMask("BAD")
                 msk |= BAD
                 msk[15:-15, 0:-20] &= ~BAD
         except Exception, e:
@@ -330,11 +350,13 @@ class LnGradImage(cgUtils.GetCcdImage):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
 def reconstructPatch(patch, z, dzdx, dzdy):
     width, height = patch.getDimensions()
 
     X, Y = np.meshgrid(np.arange(width), np.arange(height))
     patch.getArray()[:] = z + X*dzdx + Y*dzdy
+
 
 def reconstruct(xsize, ysize, dzdx, dzdy):
     nx, ny = dzdx.getDimensions()
@@ -359,6 +381,7 @@ def reconstruct(xsize, ysize, dzdx, dzdy):
 
     return recon
 
+
 def radialProfile(butler, visit, ccds=None, bin=128, nJob=None, plot=False):
     """Return arrays giving the radius, logarithmic derivative, and theta for all patches in the camera"""
 
@@ -381,12 +404,16 @@ def radialProfile(butler, visit, ccds=None, bin=128, nJob=None, plot=False):
     if not nJob:
         for dataId in fitPatchesWorkArgs:
             _r, _theta, _lnGrad = worker(dataId)
-            r += _r; theta += _theta; lnGrad += _lnGrad
+            r += _r
+            theta += _theta
+            lnGrad += _lnGrad
     else:
         # We use map_async(...).get(9999) instead of map(...) to workaround a python bug
         # in handling ^C in subprocesses (http://bugs.python.org/issue8296)
         for _r, _theta, _lnGrad in pool.map_async(worker, fitPatchesWorkArgs).get(9999):
-            r += _r; theta += _theta; lnGrad += _lnGrad
+            r += _r
+            theta += _theta
+            lnGrad += _lnGrad
 
         pool.close()
         pool.join()
@@ -394,12 +421,15 @@ def radialProfile(butler, visit, ccds=None, bin=128, nJob=None, plot=False):
         pool.close()
         pool.join()
 
-    r = np.array(r); lnGrad = np.array(lnGrad); theta = np.array(theta)
+    r = np.array(r)
+    lnGrad = np.array(lnGrad)
+    theta = np.array(theta)
 
     if plot:
         plotRadial(r, lnGrad, theta)
 
     return r, lnGrad, theta
+
 
 def makeRadial(r, lnGrad, nBin=100, profile=False, rmax=None, median=True):
     """
@@ -435,6 +465,7 @@ Return r and lnGrad binned into nBin bins.  If profile is True, integrate the ln
 
     return rbar, lng
 
+
 def plotRadial(r, lnGrad, theta=None, title=None, profile=False, showMedians=False, showMeans=False,
                tieIndex=None,
                marker="o", nBin=100, binAngle=0, alpha=1.0, xmin=-100, ctype='black', overplot=False,
@@ -466,13 +497,13 @@ def plotRadial(r, lnGrad, theta=None, title=None, profile=False, showMedians=Fal
                 rbar, lng = makeRadial(r[inBin], lnGrad[inBin], nBin, profile=profile)
 
                 color = scalarMap.to_rgba(a*180/np.pi)
-                label="%6.1f" % (a*180/np.pi)
+                label = "%6.1f" % (a*180/np.pi)
 
             if tieIndex is not None:
                 if a is None:
                     lng /= lng[tieIndex]
                 else:
-                    if lng0 is None: 
+                    if lng0 is None:
                         if tieIndex == 0:
                             lng /= lng[0]
                         lng0 = lng
@@ -505,6 +536,7 @@ def plotRadial(r, lnGrad, theta=None, title=None, profile=False, showMedians=Fal
 
     pyplot.show()
 
+
 def profilePca(butler, visits=None, ccds=None, bin=64, nBin=30, nPca=2, grad={},
                fluxes=None, bad=None,
                rmax=None, xlim=(None, None), ylim=(None, None), showLegend=True,
@@ -525,7 +557,7 @@ def profilePca(butler, visits=None, ccds=None, bin=64, nBin=30, nPca=2, grad={},
                 del grad[v]
                 del visits[visits.index(v)]
     else:
-        visits = list(sorted(grad.keys())) # sorted returns a generator
+        visits = list(sorted(grad.keys()))  # sorted returns a generator
 
     if bad:
         print "Skipping", bad
@@ -549,6 +581,7 @@ def profilePca(butler, visits=None, ccds=None, bin=64, nBin=30, nPca=2, grad={},
 
     plotting = []                       # False, but modified by plotInit
     xlabel, ylabel = "R/pixels", ""
+
     def plotInit(plotting=plotting):
         plotting.append(True)
         pyplot.clf()
@@ -650,6 +683,7 @@ def profilePca(butler, visits=None, ccds=None, bin=64, nBin=30, nPca=2, grad={},
 
     return rbar, profiles
 
+
 def plotProfiles(butler, visits, outputPlotFile=None, bin=64, nBin=30, binAngle=45, marker='o',
                  tieIndex=3, ctype=['k'], nJob=10, grad={}):
     try:
@@ -671,8 +705,8 @@ def plotProfiles(butler, visits, outputPlotFile=None, bin=64, nBin=30, binAngle=
         md = butler.get("raw_md", visit=visit, ccd=0)
         title = "%s %s %d binned %d" % (md.get("OBJECT"), afwImage.Filter(md).getName(), visit, bin)
         plotRadial(*grad[visit], title=title, alpha=1.0, ctype=ctype[i%len(ctype)],
-                    overplot=True if (pp is None and i > 0) else True,
-                    profile=True, nBin=nBin, binAngle=binAngle, marker=marker, tieIndex=tieIndex)
+                   overplot=True if (pp is None and i > 0) else True,
+                   profile=True, nBin=nBin, binAngle=binAngle, marker=marker, tieIndex=tieIndex)
         if pp:
             try:
                 pp.savefig()
@@ -687,6 +721,7 @@ def plotProfiles(butler, visits, outputPlotFile=None, bin=64, nBin=30, binAngle=
 
     return grad
 
+
 def medianFilterImage(img, nx, ny=None):
     raise RuntimeError("medianFilterImage is moved to analysis.utils")
 
@@ -695,14 +730,15 @@ def medianFilterImage(img, nx, ny=None):
 try:
     labels
 except NameError:
-    labels = {904670 : "El=90", 904672 : "El=60", 904678 : "El=45", 904674 : "El=30", 904676 : "El=15",
-              904524 : "domeflat", 904526 : "domeflat", 904528 : "domeflat", 904530 : "domeflat",
-              904532 : "domeflat",
-              904778 : "skyflat", 904780 : "skyflat", 904782 : "skyflat",
+    labels = {904670: "El=90", 904672: "El=60", 904678: "El=45", 904674: "El=30", 904676: "El=15",
+              904524: "domeflat", 904526: "domeflat", 904528: "domeflat", 904530: "domeflat",
+              904532: "domeflat",
+              904778: "skyflat", 904780: "skyflat", 904782: "skyflat",
               }
-    bad = {902636 : "only half of camera read",
-           902996 : "looks like a dark",
+    bad = {902636: "only half of camera read",
+           902996: "looks like a dark",
            }
+
 
 def diffs(mosaics, visits, refVisit=None, scale=True, raw=None,
           rng=20, IRatioMax=1.0, frame0=0, verbose=False):
@@ -784,6 +820,7 @@ def diffs(mosaics, visits, refVisit=None, scale=True, raw=None,
 
     return list(sorted(goodVisits))
 
+
 def imagePca(mosaics, visits=None, nComponent=3, log=False, rng=30,
              showEigen=True, showResiduals=False, showOriginal=True, showRecon=False,
              normalizeEimages=True, scale=False, frame0=0, verbose=False):
@@ -814,9 +851,9 @@ def imagePca(mosaics, visits=None, nComponent=3, log=False, rng=30,
             maska[np.where(np.hypot(X - 571, Y - 552) > 531)] = np.nan
             del maska
 
-            mask[ 168: 184, 701:838] = np.nan
-            mask[ 667: 733, 420:556] = np.nan
-            mask[ 653: 677, 548:570] = np.nan
+            mask[168: 184, 701:838] = np.nan
+            mask[667: 733, 420:556] = np.nan
+            mask[653: 677, 548:570] = np.nan
             mask[1031:1047, 274:414] = np.nan
 
             if False:
@@ -835,9 +872,9 @@ def imagePca(mosaics, visits=None, nComponent=3, log=False, rng=30,
     # Fiddle eigen images (we don't care about orthogonality)
     #
     if False:
-        f10 =  0.1
+        f10 = 0.1
         f20 = -0.3
-        f30 =  0.55
+        f30 = 0.55
         eImages[1].getArray()[:] += f10*eImages[0].getArray()
         eImages[2].getArray()[:] += f20*eImages[0].getArray()
         eImages[3].getArray()[:] += f30*eImages[0].getArray()
@@ -894,10 +931,11 @@ def imagePca(mosaics, visits=None, nComponent=3, log=False, rng=30,
                     A[j, i] = A[i, j]
 
             x = np.linalg.solve(A, b)
-            #print v, A, b, x
+            # print v, A, b, x
             print "%d [%s] %s" % (v, ", ".join(["%9.2e" % _ for _ in x/x[0]]), labels.get(v, ""))
 
-            recon = eImages[0].clone(); recon *= x[0]
+            recon = eImages[0].clone()
+            recon *= x[0]
             recona = recon.getArray()
             for i in range(1, nComponent):
                 recona += x[i]*eImages[i].getArray()
@@ -933,6 +971,7 @@ def imagePca(mosaics, visits=None, nComponent=3, log=False, rng=30,
 
     return eImages
 
+
 def mosaicIo(dirName, mosaics=None, mode=None):
     if not mode:
         mode = "w" if mosaics else "r"
@@ -942,7 +981,7 @@ def mosaicIo(dirName, mosaics=None, mode=None):
     if mode == "r":
         import glob
         for f in glob.glob(os.path.join(dirName, "*.fits")) + \
-                 glob.glob(os.path.join(dirName, "*.fits.gz")):
+                glob.glob(os.path.join(dirName, "*.fits.gz")):
             v = re.search(r"^([^.]+)", os.path.basename(f)).group(1)
             try:
                 v = int(v)
@@ -960,19 +999,22 @@ def mosaicIo(dirName, mosaics=None, mode=None):
 
     return mosaics
 
+
 def correctVignettingAndDistortion(camera, mosaics, bin=32):
     """Correct a dict of mosaics IN PLACE for vignetting and distortion"""
     im = mosaics.values()[0]
 
     X, Y = bin*np.meshgrid(np.arange(im.getWidth()), np.arange(im.getHeight()))
-    X -= 18208.0; Y -= 17472.0
+    X -= 18208.0
+    Y -= 17472.0
 
-    vig = utils.getVignetting(X, Y);           # Vignetting correction
-    correction = utils.getPixelArea(camera, X, Y) # Jacobian correction
+    vig = utils.getVignetting(X, Y)           # Vignetting correction
+    correction = utils.getPixelArea(camera, X, Y)  # Jacobian correction
     correction *= vig
 
     for im in mosaics.values():
         im /= correction
+
 
 def makeMos(butler, mos, frame0=0, bin=32, nJob=20, visits=[]):
     if not visits:
@@ -1003,6 +1045,7 @@ def makeMos(butler, mos, frame0=0, bin=32, nJob=20, visits=[]):
                                         title=visit, overlay=True, names=False)
         frame += 1
 
+
 def flattenBackground(im, nx=2, ny=2, scale=False):
     """Fit and subtract an nx*ny background model"""
 
@@ -1018,6 +1061,7 @@ def flattenBackground(im, nx=2, ny=2, scale=False):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
 def plotRadialProfile(mos, visits, butler=None, showMedians=True, showMeans=False,
                       title="", xlim=None, ylim=None,
                       binning=1, tieIndex=None, normalize=True, LaTeX=False, dirName=None, savePlot=False,
@@ -1030,42 +1074,43 @@ visits may be a filter name
     colors = ["red", "blue", "green", "cyan", "magenta", "yellow", "black", "brown", "orchid", "orange"]
 
     abell2163 = []
-    abell2163 += range(902924, 902928+1, 2) # g
-    abell2163 += range(903266, 903274+1, 2) # r
-    abell2163 += [v for v in range(902876, 902894+1, 2) if v not in (902884, 902886, 902890)] # i
+    abell2163 += range(902924, 902928+1, 2)  # g
+    abell2163 += range(903266, 903274+1, 2)  # r
+    abell2163 += [v for v in range(902876, 902894+1, 2) if v not in (902884, 902886, 902890)]  # i
 
     dth_a = []
-    dth_a += range(904410, 904450+1, 4) + range(904456, 904474+1, 2) # y
+    dth_a += range(904410, 904450+1, 4) + range(904456, 904474+1, 2)  # y
 
     dth_16h = []
-    dth_16h += range(902800, 902860 + 1, 6) + range(902862, 902870+1, 2) # i
+    dth_16h += range(902800, 902860 + 1, 6) + range(902862, 902870+1, 2)  # i
 
     stripe82l = []
     stripe82l += range(902936, 902942+1, 2)            # g
     stripe82l += range(903332, 903338+1, 2)            # r
-    stripe82l += range(904006, 904008+1, 2) + range(904036, 904038+1, 2) # i
-    stripe82l +=  range(904350, 904400+1, 2)           # y
+    stripe82l += range(904006, 904008+1, 2) + range(904036, 904038+1, 2)  # i
+    stripe82l += range(904350, 904400+1, 2)           # y
 
     science = abell2163 + dth_a + dth_16h + stripe82l
 
     darkDome = []
-    darkDome += range(904326, 904330+1, 2) # g
-    darkDome += [904520] + range(904534, 904538+1, 2) + range(904670, 904678+1, 2) + range(904786, 904794+1,2) # i
+    darkDome += range(904326, 904330+1, 2)  # g
+    darkDome += [904520] + range(904534, 904538+1, 2) + range(904670, 904678 +
+                                                              1, 2) + range(904786, 904794+1, 2)  # i
 
     domeflats = []
-    domeflats += range(903036, 903044+1, 2) # g
-    domeflats += range(903440, 903452+1, 2) # r
-    domeflats += range(902686, 902704+1, 2) # i
-    domeflats += [904606, 904608, 904626, 904628] # i
-    domeflats += range(905420, 905428+1, 2) # i
-    domeflats += range(904478, 904490+1, 2) # y
-    domeflats += range(904742, 904766+1, 2) # NB921
+    domeflats += range(903036, 903044+1, 2)  # g
+    domeflats += range(903440, 903452+1, 2)  # r
+    domeflats += range(902686, 902704+1, 2)  # i
+    domeflats += [904606, 904608, 904626, 904628]  # i
+    domeflats += range(905420, 905428+1, 2)  # i
+    domeflats += range(904478, 904490+1, 2)  # y
+    domeflats += range(904742, 904766+1, 2)  # NB921
 
     skyflats = []
     skyflats += range(902976, 903002+1, 2)          # g
     skyflats += range(903420, 903432 + 1, 2)        # r
     skyflats += range(902612, 902634+1, 2)          # i
-    skyflats = [v for v in skyflats if v != 902996] # remove failed exposures
+    skyflats = [v for v in skyflats if v != 902996]  # remove failed exposures
 
     filterName = None
     if isinstance(visits, str):         # get all visits taken with that title
@@ -1094,13 +1139,13 @@ visits may be a filter name
                 raw = butler.get("raw", visit=v, ccd=10)
                 rawFilterName = raw.getFilter().getName()
             elif False:
-                md = butler.get("raw_md", visit=v, ccd=10) # why does this fail?
+                md = butler.get("raw_md", visit=v, ccd=10)  # why does this fail?
                 rawFilterName = afwImage.Filter(md).getName()
             else:
                 rawFilterName = butler.get("raw_md", visit=v, ccd=10).get("FILTER01").lower()
                 if re.search(r"^hsc-", rawFilterName):
                     rawFilterName = rawFilterName[-1:]
-                if rawFilterName == "z" and v in range(904672, 905068+1, 2): # z wasn't available
+                if rawFilterName == "z" and v in range(904672, 905068+1, 2):  # z wasn't available
                     rawFilterName = "i"                                      # error in header
 
             if rawFilterName == filterName.lower():
@@ -1112,7 +1157,7 @@ visits may be a filter name
                 filterName = butler.get("raw_md", visit=v, ccd=10).get("FILTER01").lower()
                 if re.search(r"^hsc-", filterName):
                     filterName = filterName[-1:]
-                if filterName == "z" and v in range(904672, 905068+1, 2): # z wasn't available
+                if filterName == "z" and v in range(904672, 905068+1, 2):  # z wasn't available
                     filterName = "i"                                      # error in header
             else:
                 filterName = "unknown"
@@ -1172,7 +1217,8 @@ visit & median flux & exposure time & line type & line colour \\
         if i == 0:
             width, height = im.getDimensions()
             x, y = np.meshgrid(np.arange(width), np.arange(height))
-            x += im.getX0(); y += im.getY0()
+            x += im.getX0()
+            y += im.getY0()
             r = np.hypot(x, y)
             theta = np.arctan2(y, x)
 
@@ -1193,11 +1239,11 @@ visit & median flux & exposure time & line type & line colour \\
             marker = '-' if i < len(colors) else '-.' if i < 2*len(colors) else '--'
         else:
             marker = '-' if v in science else '-.' if v in domeflats else '--' if v in skyflats else 'o'
-        ctype=colors[i%len(colors)] if True else \
-              'green' if v in domeflats else \
-              'black' if v in science else \
-              'red'   if v in skyflats else \
-              'blue'
+        ctype = colors[i%len(colors)] if True else \
+            'green' if v in domeflats else \
+            'black' if v in science else \
+            'red'   if v in skyflats else \
+            'blue'
 
         if True:
             columns = (v, med, calib.getExptime() if calib else np.nan, marker, ctype)

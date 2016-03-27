@@ -12,22 +12,23 @@ import lsst.afw.display.ds9 as ds9
 import lsst.analysis.utils as utils
 
 position = {                            # position of Arcturus on 16x16 binned "showCamera" images
-    906142 : (8,    8),
-    906144 : (8,  116),
-    906146 : (6,  228),
-    906148 : (5,  341),
-    906150 : (5,  455),
-    906152 : (8,  566),
-    906154 : (9,  682),
-    906156 : (8,  798),
-    906158 : (8,  917),
-    906160 : (8, 1039),
-    906162 : (8, 1038 +   108),
-    906164 : (8, 1038 + 2*108),
-    906186 : (8, 1038 + 3*108),
-    906188 : (8, 1038 + 4*108),
-    906190 : (8, 1038 + 5*108),
-    }
+    906142: (8, 8),
+    906144: (8, 116),
+    906146: (6, 228),
+    906148: (5, 341),
+    906150: (5, 455),
+    906152: (8, 566),
+    906154: (9, 682),
+    906156: (8, 798),
+    906158: (8, 917),
+    906160: (8, 1039),
+    906162: (8, 1038 + 108),
+    906164: (8, 1038 + 2*108),
+    906186: (8, 1038 + 3*108),
+    906188: (8, 1038 + 4*108),
+    906190: (8, 1038 + 5*108),
+}
+
 
 def showFrames(mos, frame0=1, R=23, subtractSky=True):
     visits = sorted(position.keys())
@@ -43,7 +44,7 @@ def showFrames(mos, frame0=1, R=23, subtractSky=True):
         im = mos[v]
         if subtractSky:
             im = im.clone()
-            im[2121:2230, 590:830] = np.nan # QE for this chip is bad
+            im[2121:2230, 590:830] = np.nan  # QE for this chip is bad
 
             ima = im.getArray()
             im[:] -= np.percentile(ima, 25)
@@ -54,7 +55,9 @@ def showFrames(mos, frame0=1, R=23, subtractSky=True):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
 class MedianFilterImageWorker(object):
+
     def __init__(self, mos, medianN):
         self.mos = mos
         self.medianN = medianN
@@ -62,7 +65,8 @@ class MedianFilterImageWorker(object):
     def __call__(self, v):
         print "Median filtering visit %d" % v
         return v, utils.medianFilterImage(self.mos[-v], self.medianN)
-        
+
+
 def prepareFrames(mos, frame0=1, R=100, medianN=23, onlyVisits=[], nJob=1, force=False):
     """Prepare frames to have their radial profiles measured.
 Subtract the first quartile
@@ -79,7 +83,7 @@ process every visit in the positions dict
 
     visits0 = visits[:]                 # needed to keep frame numbers aligned
     if not force:
-        visits = [v for v in visits if not -v in mos] # don't process ones we've already seen
+        visits = [v for v in visits if not -v in mos]  # don't process ones we've already seen
     if onlyVisits:
         visits = [v for v in visits if v in onlyVisits]
 
@@ -89,7 +93,7 @@ process every visit in the positions dict
     for v in visits:
         im = mos[v].clone()
         mos[-v] = im
-        im[2121:2230, 590:830] = np.nan # QE for this chip is bad
+        im[2121:2230, 590:830] = np.nan  # QE for this chip is bad
 
         ima = im.getArray()
         im[:] -= np.percentile(ima, 25)
@@ -127,7 +131,7 @@ process every visit in the positions dict
             continue
 
         im = mos[-v]
-        
+
         if True:
             ds9.mtv(im, title=v, frame=frame)
         else:
@@ -136,8 +140,9 @@ process every visit in the positions dict
         xc, yc = position[v]
         xc -= im.getX0()
         yc -= im.getY0()
-            
+
         ds9.dot("o", xc, yc, size=R, frame=frame, ctype=ds9.GREEN if yc < im.getHeight() else ds9.RED)
+
 
 def OLDprepareFrames(mos, frame0=1, R=23, medianN=23, onlyVisits=[], force=False):
     """Prepare frames to have their radial profiles measured.
@@ -166,7 +171,7 @@ If onlyVisits is specified, only process those chips [n.b. frame0 is still obeye
         print "Processing %d" % v
 
         im = mos[v].clone()
-        im[2121:2230, 590:830] = np.nan # QE for this chip is bad
+        im[2121:2230, 590:830] = np.nan  # QE for this chip is bad
 
         ima = im.getArray()
         im[:] -= np.percentile(ima, 25)
@@ -231,8 +236,8 @@ If rmax is provided it's the maximum value of r to consider
 
         prof[i] = val
 
-
     return rbar, prof
+
 
 def plotAnnularAverages(mos, visits, bin=16, useSmoothed=True, weightByR=True, showSum=True, **kwargs):
     pyplot.clf()
@@ -250,17 +255,17 @@ def plotAnnularAverages(mos, visits, bin=16, useSmoothed=True, weightByR=True, s
         #
         # Allow for the extra phase space further away from the boresight
         if weightByR:
-            r = bin*(np.hypot(*position[v]) + 0.3*spacing) # really a geometric mean?
+            r = bin*(np.hypot(*position[v]) + 0.3*spacing)  # really a geometric mean?
             prof *= 2*np.pi*r
 
         print "%d %07.2g" % (v, np.sum(prof))
-            
+
         if showSum:
             if sumProf is None:
                 sumProf = np.zeros_like(prof)
-                
+
             sumProf += prof
-            
+
         pyplot.plot(rbar, prof, label=str(v))
 
     if sumProf is not None:

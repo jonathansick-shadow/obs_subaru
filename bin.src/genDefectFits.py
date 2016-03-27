@@ -16,6 +16,7 @@ import lsst.afw.cameraGeom.utils as afwCGU
 Defect = collections.namedtuple('Defect', ['x0', 'y0', 'width', 'height'])
 mapperMap = {'hsc': HscMapper, 'suprimecam': SuprimecamMapper, 'suprimecam_mit': SuprimecamMapperMit}
 
+
 def genDefectFits(cameraName, source, targetDir):
     mapper = mapperMap[cameraName.lower()](root=".")
     camera = mapper.camera
